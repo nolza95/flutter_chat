@@ -33,9 +33,9 @@ class LoginDialog extends StatelessWidget {
 
     print("## LoginDialog.build()");
 
-    return ScopedModel<FlutterChatModel>(model : model, child : ScopedModelDescendant<FlutterChatModel>(
-        builder : (BuildContext inContext, Widget inChild, FlutterChatModel inModel) {
-          return AlertDialog(
+    return ChangeNotifierProvider.value(
+        value : model,
+        child : Consumer<FlutterChatModel>(builder: (inContext, inModel, inChild) => AlertDialog(
               content : Container(height : 220,
                   child : Form(key : _loginFormKey,
                       child : Column(
@@ -74,7 +74,7 @@ class LoginDialog extends StatelessWidget {
                         // The form is valid, save values to accessible variables.
                         _loginFormKey.currentState.save();
                         // Trigger connection to server.
-                        connector.connectToServer(() {
+                        connector.connectToServer(model.rootBuildContext, () {
                           // Ok, we're connected, now try to validate the user.
                           connector.validate(_userName, _password, (inStatus) async {
                             print("## LoginDialog: validate callback: inResponseStatus = $inStatus");
@@ -112,9 +112,11 @@ class LoginDialog extends StatelessWidget {
                     } /* End onPressed(). */
                 ) /* End FlatButton. */
               ] /* End actions. */
-          ); /* End AlertDialog. */
-        } /* End ScopedModel.builder(). */
-    )); /* End ScopedModel/ScopedModelDescendant. */
+          )
+         /* End ScopedModel.builder(). */
+    )
+  );
+
 
   } /* End build(). */
 
@@ -127,7 +129,7 @@ class LoginDialog extends StatelessWidget {
     print("## LoginDialog.validateWithStoredCredentials(): inUserName = $inUserName, inPassword = $inPassword");
 
     // Trigger connection to server.
-    connector.connectToServer(() {
+    connector.connectToServer(model.rootBuildContext, () {
       // Ok, we're connected, now try to validate the user.
       connector.validate(inUserName, inPassword, (inStatus) {
         print("## LoginDialog: validateWithStoredCredentials callback: inStatus = $inStatus");
