@@ -449,8 +449,8 @@ void left(inData) {
   print("## Connector.left(): payload = $payload");
 
   // Update the list of users in the room if this user is in the room.
-  if (model.currentRoomName == payload["room"]["roomName"]) {
-    model.setCurrentRoomUserList(payload["room"]["users"]);
+  if (model.currentRoomName == payload["roomName"]) {
+    model.setCurrentRoomUserList(payload["users"]);
   }
 } /* End left(). */
 

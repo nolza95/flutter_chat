@@ -1,117 +1,137 @@
-import 'package:flutter/material.dart';
+import "dart:io";
+import "package:path/path.dart";
+import "package:path_provider/path_provider.dart";
+import "package:flutter/material.dart";
+import "package:provider/provider.dart";
+import "LoginDialog.dart";
+import "Model.dart" show FlutterChatModel, model;
+import "Home.dart";
+import "Lobby.dart";
+import "Room.dart";
+import "UserList.dart";
+import "CreateRoom.dart";
+
+
+// Note that these were moved from inside the main()-startMeUp() method after book publication to address an issue that
+// occurred when a newer Flutter SDK was used.
+var credentials;
+var exists;
+
 
 void main() {
-  runApp(MyApp());
-}
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+  // Note that this was added after book publication to address an issue that occurred when a newer Flutter SDK was
+  // used.
+  WidgetsFlutterBinding.ensureInitialized();
+
+  print("## main(): FlutterChat starting");
+
+  startMeUp() async {
+
+    // Note: We do all the work that could take some time BEFORE building the UI.
+
+    // Discover the app's documents directory.
+    Directory docsDir = await getApplicationDocumentsDirectory();
+    model.docsDir = docsDir;
+
+    // See if the credentials file exists.
+    var credentialsFile = File(join(model.docsDir.path, "credentials"));
+    exists = await credentialsFile.exists();
+
+    // If it does exist the read it in.
+    if (exists) {
+      credentials = await credentialsFile.readAsString();
+      print("## main(): credentials = $credentials");
+    }
+
+    // Build the initial UI.
+    runApp(FlutterChat());
+
+  } /* End startMeUp(). */
+
+  // Start the festivities!
+  startMeUp();
+
+} /* End main(). */
+
+
+/// Bootstrap class (to avoid exception about internationalization).
+class FlutterChat extends StatelessWidget {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-        // This makes the visual density adapt to the platform that you run
-        // the app on. For desktop platforms, the controls will be smaller and
-        // closer together (more dense) than on mobile platforms.
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
-    );
+  Widget build(final BuildContext context) {
+    print("## FlutterChat.build()");
+    return MaterialApp(home : Scaffold(body : FlutterChatMain()));
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
+/// Main app class.
+class FlutterChatMain extends StatelessWidget {
 
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
 
-  final String title;
-
+  /// The build() method.
+  ///
+  /// @param  inContext The BuildContext for this widget.
+  /// @return           A Widget.
   @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
+  Widget build(final BuildContext inContext) {
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+    print("## FlutterChatMain.build()");
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+    // Store off the context so we can launch the login dialog if needed.
+    model.rootBuildContext = inContext;
 
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
-    );
-  }
-}
+    // Note that this added after book publication to address an issue that occurred when a newer Flutter SDK was used.
+    WidgetsBinding.instance.addPostFrameCallback((_) => executeAfterBuild());
+
+    return ChangeNotifierProvider.value(
+        value : model,
+        child : Consumer<FlutterChatModel>(builder: (inContext, inModel, inChild) => MaterialApp(initialRoute : "/",
+              routes : {
+                "/Lobby" : (screenContext) => Lobby(),
+                "/Room" : (screenContext) => Room(),
+                "/UserList" : (screenContext) => UserList(),
+                "/CreateRoom" : (screenContext) => CreateRoom()
+              },
+              home : Home()
+          );
+        }
+    ));
+
+  } /* End build(). */
+
+
+  // If the credential file exists then call the server to validate the user.  Note that there's an edge case where
+  // if a user registers, then the server restarts, and ANOTHER user registers with this one's userName, and then
+  // this user tries to validate, it will fail because the password (presumably!) won't match.  In that case,
+  // the code in validateWithStoredCredentials() will delete the credentials file and alert the user to this
+  // situation.  Upon app restart, they'll be prompted for new credentials.
+  // Note that this was moved from inside the main()->startMeUp() method after book publication to address an issue
+  // that occurred when a newer Flutter SDK was used.  This also introduces the addPostFrameCallback() technique
+  // to have this code execute after build() completes, which originally wasn't necessary.
+  Future<void> executeAfterBuild() async {
+
+    if (exists) {
+
+      print("## main(): Credential file exists, calling server with stored credentials");
+
+      List credParts = credentials.split("============");
+      LoginDialog().validateWithStoredCredentials(credParts[0], credParts[1]);
+
+      // If it DOESN'T exist then show the login dialog.
+    } else {
+
+      print("## main(): Credential file does NOT exist, prompting for credentials");
+
+      await showDialog(context : model.rootBuildContext, barrierDismissible : false,
+          builder : (BuildContext inDialogContext) {
+            return LoginDialog();
+          }
+      );
+
+    }
+
+  } /* executeAfterBuild(). */
+
+
+} /* End class. */
